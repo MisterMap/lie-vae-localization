@@ -15,5 +15,6 @@ class TestToyDataModule(unittest.TestCase):
         batches = self._data_module.train_dataloader()
         for batch in batches:
             self.assertEqual(batch["image"].shape, torch.Size([128, 3, 32, 32]))
-            self.assertEqual(batch["position"].shape, torch.Size([128, 3]))
+            self.assertEqual(batch["position"][0].shape, torch.Size([128, 2]))
+            self.assertEqual(batch["position"][1].shape, torch.Size([128, 2]))
             break
