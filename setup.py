@@ -16,6 +16,6 @@ setup(name='mvae_localization',
       author='Mikhail Kurenkov',
       author_email='kurenkovrobotics@gmail.com',
       package_dir={},
-      packages=["mvae", "mvae.data", "mvae.models", "mvae.utils", "mvae.utils.factory"],
+      packages=["mvae", "mvae.data", "mvae.models", "mvae.utils", "mvae.models.factory"],
       install_requires=install_requires
       )
