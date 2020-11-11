@@ -1,6 +1,6 @@
 import unittest
 
-from parallel_vae.utils.toy_dataset_maker import ToyDatasetMaker
+from mvae.utils.toy_dataset_maker import ToyDatasetMaker
 
 
 class TestToyDatasetMaker(unittest.TestCase):

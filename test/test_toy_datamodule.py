@@ -1,6 +1,6 @@
 import unittest
 import os
-from parallel_vae.data import ToyDataModule
+from mvae.data import ToyDataModule
 import torch
 
 

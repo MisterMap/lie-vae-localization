@@ -1,7 +1,7 @@
 import unittest
 import os
-from parallel_vae.data import ToyDataModule
-from parallel_vae.models import VAE
+from mvae.data import ToyDataModule
+from mvae.models import VAE
 import pytorch_lightning as pl
 from pytorch_lightning.utilities.parsing import AttributeDict
 
