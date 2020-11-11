@@ -12,15 +12,16 @@ class VAE(pl.LightningModule):
     def __init__(self, params):
         super().__init__()
         self.save_hyperparameters(params)
-        self.encoder = ImageVaeEncoder(self.hparams.latent_dimension, **self.hparams.encoder)
+        self.encoder = ImageVaeEncoder(**self.hparams.encoder)
         self.decoder = ImageVaeDecoder(self.hparams.latent_dimension, **self.hparams.encoder)
         self._loss = nn.MSELoss(reduction="sum")
         self._sample_loss = nn.MSELoss(reduction="none")
         self._current_beta = self.hparams.beta
         self._gamma = self.hparams.gamma
 
-        self._mu_linear = nn.Linear(self.hparams.encoder.hidden_dimensions[-1], self.hparams.latent_dimension)
-        self._logvar_linear = nn.Linear(self.hparams.encoder.hidden_dimensions[-1], self.hparams.latent_dimension)
+        final_encoder_dimension = self.encoder.final_dimension()
+        self._mu_linear = nn.Linear(final_encoder_dimension, self.hparams.latent_dimension)
+        self._logvar_linear = nn.Linear(final_encoder_dimension, self.hparams.latent_dimension)
 
         self.init_weights()
 
