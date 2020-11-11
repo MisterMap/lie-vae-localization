@@ -49,7 +49,7 @@ class PoseMVAE(pl.LightningModule):
     def training_step(self, batch, batch_index):
         generated, losses = self.forward(batch)
         train_losses = {}
-        for key, value in train_losses.items():
+        for key, value in losses.items():
             train_losses[f"train_{key}"] = value
         self.log_dict(train_losses)
         return losses["loss"]
