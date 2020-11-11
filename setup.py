@@ -13,9 +13,9 @@ if os.path.isfile(requirements_path):
 setup(name='mvae_localization',
       version='0.1',
       description='MVAE Monte-Carlo robot localization project',
-      author='kurenkovrobotics@gmail.com',
-      author_email='',
+      author='Mikhail Kurenkov',
+      author_email='kurenkovrobotics@gmail.com',
       package_dir={},
-      packages=["mvae", "mvae.data", "mvae.modules", "mvae.utils"],
+      packages=["mvae", "mvae.data", "mvae.models", "mvae.utils"],
       install_requires=install_requires
       )
