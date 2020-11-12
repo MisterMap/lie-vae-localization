@@ -4,9 +4,9 @@ import torch.utils.data
 
 
 class ToyDataModule(pl.LightningDataModule):
-    def __init__(self, path, batch_size=128, num_workers=4):
+    def __init__(self, path, batch_size=128, num_workers=4, rotation_augmentation=True):
         super().__init__()
-        self._train_dataset = ToyDataset(path)
+        self._train_dataset = ToyDataset(path, rotation_augmentation)
         self._batch_size = batch_size
         self._num_workers = num_workers
         print(f"[ToyDataModule] - train dataset size {len(self._train_dataset)}")
