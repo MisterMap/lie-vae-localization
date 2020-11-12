@@ -28,7 +28,7 @@ class ToyDataset(Dataset):
         angle = self._trajectory[index].astype(np.float32)[2]
         if self._rotation_augmentation:
             image, angle = self.rotate_data_point(image, angle)
-        rotation = np.array([np.cos(angle), np.sin(angle)])
+        rotation = np.array([np.cos(angle), np.sin(angle)]).astype(np.float32)
         data = {
             "image": (image.transpose(2, 0, 1) / 255.).astype(np.float32),
             "position": (translation, rotation)
