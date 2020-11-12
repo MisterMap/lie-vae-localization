@@ -106,29 +106,48 @@ class PoseMVAE(pl.LightningModule):
         }
         return reconstructed_output, losses
 
-    def reconstruct_image_from_position(self, position):
+    def reconstruct_image_from_position(self, position, reparametrize=True):
         pose_hidden = self.pose_encoder(position)
 
         pose_z_mu = self._pose_mu_linear(pose_hidden)
         pose_z_logvar = self._pose_logvar_linear(pose_hidden)
 
-        return self._reconstruct_image(pose_z_mu, pose_z_logvar)
+        return self._reconstruct_image(pose_z_mu, pose_z_logvar, reparametrize)
 
-    def reconstruct_image_from_image(self, image):
+    def reconstruct_image_from_image(self, image,  reparametrize=True):
         image_hidden = self.image_encoder(image)
 
         image_z_mu = self._image_mu_linear(image_hidden)
         image_z_logvar = self._image_logvar_linear(image_hidden)
-        return self._reconstruct_image(image_z_mu, image_z_logvar)
+        return self._reconstruct_image(image_z_mu, image_z_logvar, reparametrize)
 
-    def _reconstruct_image(self, z_mu, z_logvar):
+    def _reconstruct_image(self, z_mu, z_logvar, reparametrize=True):
+        z = self._generate_z(z_mu, z_logvar, reparametrize)
+        reconstructed_image = self.image_decoder(z)
+        return reconstructed_image
+
+    def _reconstruct_pose(self, z_mu, z_logvar, reparametrize=True):
+        z = self._generate_z(z_mu, z_logvar, reparametrize)
+        reconstructed_image = self.pose_decoder(z)
+        return reconstructed_image
+
+    def _generate_z(self, z_mu, z_logvar, reparametrize=True):
         mu = torch.cat([z_mu[None], torch.zeros_like(z_mu)[None]], dim=0)
         logvar = torch.cat([z_logvar[None], torch.zeros_like(z_logvar)[None]], dim=0)
 
         z_mu, z_logvar = self.calculate_distribution_product(mu, logvar)
-        z = self.reparametrize(z_mu, z_logvar)
-        reconstructed_image = self.image_decoder(z)
-        return reconstructed_image
+        if reparametrize:
+            z = self.reparametrize(z_mu, z_logvar)
+        else:
+            z = z_mu
+        return z
+
+    def reconstruct_pose_from_image(self, image, reparametrize):
+        image_hidden = self.image_encoder(image)
+
+        image_z_mu = self._image_mu_linear(image_hidden)
+        image_z_logvar = self._image_logvar_linear(image_hidden)
+        return self._reconstruct_pose(image_z_mu, image_z_logvar, reparametrize)
 
     @staticmethod
     def reparametrize(z_mu, z_logvar):
