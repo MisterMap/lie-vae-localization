@@ -1,13 +1,11 @@
 import torch.nn as nn
 
 
-class PoseVaeDecoder(nn.Module):
+class BallPoseVaeDecoder(nn.Module):
     def __init__(self, latent_space_size, hidden_dimensions):
         super().__init__()
-        self._translation_linear = nn.Linear(hidden_dimensions[0], 2)
-        self._translation_logvar_linear = nn.Linear(hidden_dimensions[0], 2)
-        self._rotation_linear = nn.Linear(hidden_dimensions[0], 2)
-        self._rotation_logvar_linear = nn.Linear(hidden_dimensions[0], 2)
+        self._center_linear = nn.Linear(hidden_dimensions[0], 2)
+        self._center_logvar_linear = nn.Linear(hidden_dimensions[0], 2)
         self._decoder = nn.Sequential(*self.make_modules(latent_space_size, hidden_dimensions))
 
     @staticmethod
@@ -23,9 +21,7 @@ class PoseVaeDecoder(nn.Module):
 
     def forward(self, x):
         x = self._decoder(x)
-        translation = self._translation_linear(x)
-        rotation = self._rotation_linear(x)
-        translation_logvar = self._translation_logvar_linear(x)
-        rotation_logvar = self._rotation_logvar_linear(x)
-        return translation, rotation, translation_logvar, rotation_logvar
+        center = self._center_linear(x)
+        center_logvar = self._center_logvar_linear(x)
+        return center, center_logvar
 

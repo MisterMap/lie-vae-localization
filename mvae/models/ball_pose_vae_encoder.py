@@ -2,8 +2,8 @@ import torch.nn as nn
 import torch
 
 
-class PoseVaeEncoder(nn.Module):
-    def __init__(self, hidden_dimensions, previous_dim=4):
+class BallPoseVaeEncoder(nn.Module):
+    def __init__(self, hidden_dimensions, previous_dim=2):
         super().__init__()
         modules = []
         for dim in hidden_dimensions:
@@ -18,5 +18,4 @@ class PoseVaeEncoder(nn.Module):
         return self._last_dim
 
     def forward(self, x):
-        x = torch.cat(x, dim=1)
         return self._encoder(x)
