@@ -4,7 +4,7 @@ from .utils import activation_function
 
 
 class PoseVaeEncoder(nn.Module):
-    def __init__(self, hidden_dimensions, previous_dim=4, activation_type="relu", **_):
+    def __init__(self, hidden_dimensions, previous_dim=4, activation_type="leaky_relu", **_):
         super().__init__()
         modules = []
         for dim in hidden_dimensions:

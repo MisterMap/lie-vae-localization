@@ -16,7 +16,7 @@ class ToyDataset(Dataset):
     @staticmethod
     def rotate_data_point(image, angle):
         angle_delta = np.random.random() * 2 * np.pi
-        angle = angle - angle_delta
+        angle = angle + angle_delta
         angle_delta = angle_delta / np.pi * 180
         matrix = cv2.getRotationMatrix2D((image.shape[1] / 2, image.shape[0] / 2), angle_delta, 1)
         image = cv2.warpAffine(image, matrix, (image.shape[1], image.shape[0]), borderValue=(255, 255, 255))
