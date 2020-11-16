@@ -65,14 +65,28 @@ class ToyDatasetMaker(object):
             trajectory = np.concatenate((trajectory, trajectory_part), axis=0)
         return trajectory
 
-    def save_dataset(self, path, step_length, line_count):
-        trajectory = self.snail_trajectory(step_length, line_count)
+    def make_random_trajectory(self, point_count):
+        positions = np.random.random((point_count, 3))
+        positions[:, 0] *= self._map_width
+        positions[:, 1] *= self._map_height
+        positions[:, 2] *= 2 * np.pi
+        return positions
+
+    def save_dataset(self, path, step_length, line_count, trajectory_type="snail"):
+        if trajectory_type == "snail":
+            trajectory = self.snail_trajectory(step_length, line_count)
+        elif trajectory_type == "random":
+            trajectory = self.make_random_trajectory(line_count)
+        else:
+            trajectory = None
         images = []
         for pose in trajectory:
             images.append(self.get_image(pose))
 
         data = {
             "images": images,
-            "trajectory": trajectory
+            "trajectory": trajectory,
+            "point_centers": self._centers,
+            "point_colors": self._colors
         }
         np.savez(path, data)

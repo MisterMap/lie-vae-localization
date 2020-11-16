@@ -3,7 +3,7 @@ import torch
 
 
 class PoseVaeEncoder(nn.Module):
-    def __init__(self, hidden_dimensions, previous_dim=4):
+    def __init__(self, hidden_dimensions, previous_dim=4, **_):
         super().__init__()
         modules = []
         for dim in hidden_dimensions:
