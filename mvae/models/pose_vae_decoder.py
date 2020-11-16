@@ -31,7 +31,7 @@ class PoseVaeDecoder(nn.Module):
         x = self._decoder(x)
         translation = self._translation_linear(x)
         rotation = self._rotation_linear(x)
-        if self._constant_logvar is None:
+        if self._translation_logvar is None:
             translation_logvar = self._translation_logvar_linear(x)
             rotation_logvar = self._rotation_logvar_linear(x)
         else:
