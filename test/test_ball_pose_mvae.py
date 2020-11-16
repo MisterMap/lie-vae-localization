@@ -17,7 +17,8 @@ class TestPoseMVAE(unittest.TestCase):
                 hidden_dimensions=[64, 128]
             ),
             pose_encoder=AttributeDict(
-                hidden_dimensions=[32, 32]
+                hidden_dimensions=[32, 32],
+                constant_logvar=True
             ),
             latent_dimension=20,
             beta=1,

@@ -3,7 +3,7 @@ import torch
 
 
 class BallPoseVaeEncoder(nn.Module):
-    def __init__(self, hidden_dimensions, previous_dim=2):
+    def __init__(self, hidden_dimensions, previous_dim=2, **_):
         super().__init__()
         modules = []
         for dim in hidden_dimensions:
