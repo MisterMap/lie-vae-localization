@@ -1,14 +1,16 @@
 import torch
 import torch.nn as nn
+from torchnlp.nn import Attention
 
 
 class ImageVaeDecoder(nn.Module):
     def __init__(self, latent_space_size, hidden_dimensions, input_channels=3, kernel_size=3, max_pull=2,
-                 image_size=32):
+                 image_size=32, attention=False):
         super().__init__()
         final_image_size = image_size // max_pull ** len(hidden_dimensions)
         self._fc_latent = nn.Linear(latent_space_size, final_image_size * final_image_size * hidden_dimensions[-1])
-
+        if attention:
+            self._fc_latent = nn.Sequential(Attention(latent_space_size), self._fc_latent)
         padding = kernel_size // 2
 
         previous_dim = input_channels

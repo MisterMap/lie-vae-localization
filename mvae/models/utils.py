@@ -1,10 +1,11 @@
 import torch.nn as nn
+import torch
 
 
 class Swish(nn.Module):
     """https://arxiv.org/abs/1710.05941"""
     def forward(self, x):
-        return x * nn.functional.sigmoid(x)
+        return x * torch.sigmoid(x)
 
 
 def activation_function(activation_type):
