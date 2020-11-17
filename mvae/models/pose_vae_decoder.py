@@ -19,12 +19,13 @@ class PoseVaeDecoder(nn.Module):
         if constant_logvar:
             self._translation_logvar = nn.Parameter(torch.zeros(2))
             self._rotation_logvar = nn.Parameter(torch.zeros(2))
+        self._attention = None
+        if attention:
+            self._attention = Attention(latent_space_size)
 
     @staticmethod
     def make_modules(latent_space_size, hidden_dimensions, activation_type="relu", attention=False):
         modules = []
-        if attention:
-            modules.append(Attention(latent_space_size))
         previous_dim = latent_space_size
         for dim in reversed(hidden_dimensions):
             modules.append(nn.Linear(previous_dim, dim))
@@ -34,6 +35,9 @@ class PoseVaeDecoder(nn.Module):
         return modules
 
     def forward(self, x):
+        if self._attention is not None:
+            x, _ = self._attention(x[:, None, :], x[:, None, :])
+            x = x[:, 0, :]
         x = self._decoder(x)
         translation = self._translation_linear(x)
         rotation = self._rotation_linear(x)

@@ -14,10 +14,12 @@ class TestPoseMVAE(unittest.TestCase):
         params = AttributeDict(
             optimizer=AttributeDict(),
             image_encoder=AttributeDict(
-                hidden_dimensions=[64, 128]
+                hidden_dimensions=[64, 128],
+                attention=True,
             ),
             pose_encoder=AttributeDict(
-                hidden_dimensions=[32, 32]
+                hidden_dimensions=[32, 32],
+                attention=True,
             ),
             latent_dimension=20,
             beta=1,

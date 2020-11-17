@@ -9,8 +9,6 @@ class ToyDataset(Dataset):
         self._images = data.item()["images"]
         self._trajectory = data.item()["trajectory"]
         self._rotation_augmentation = rotation_augmentation
-        self._centers = data.item()["point_centers"]
-        self._colors = data.item()["point_colors"]
 
     def __len__(self):
         return len(self._trajectory)

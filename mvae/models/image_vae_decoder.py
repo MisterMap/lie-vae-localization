@@ -9,8 +9,6 @@ class ImageVaeDecoder(nn.Module):
         super().__init__()
         final_image_size = image_size // max_pull ** len(hidden_dimensions)
         self._fc_latent = nn.Linear(latent_space_size, final_image_size * final_image_size * hidden_dimensions[-1])
-        if attention:
-            self._fc_latent = nn.Sequential(Attention(latent_space_size), self._fc_latent)
         padding = kernel_size // 2
 
         previous_dim = input_channels
@@ -25,7 +23,13 @@ class ImageVaeDecoder(nn.Module):
         self._mu_deconv_part = nn.Sequential(*modules)
         self._final_image_size = final_image_size
         self._last_dim = hidden_dimensions[-1]
+        self._attention = None
+        if attention:
+            self._attention = Attention(latent_space_size)
 
     def forward(self, x):
+        if self._attention is not None:
+            x, _ = self._attention(x[:, None, :], x[:, None, :])
+            x = x[:, 0, :]
         x = self._fc_latent(x).reshape(x.size()[0], self._last_dim, self._final_image_size, self._final_image_size)
         return torch.sigmoid(self._mu_deconv_part(x))
