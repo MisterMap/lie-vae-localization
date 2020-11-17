@@ -6,7 +6,7 @@ from torchnlp.nn import Attention
 
 class PoseVaeDecoder(nn.Module):
     def __init__(self, latent_space_size, hidden_dimensions, activation_type="leaky_relu", attention=False,
-                 constant_logvar=False):
+                 constant_logvar=False, **_):
         super().__init__()
         self._translation_linear = nn.Linear(hidden_dimensions[0], 2)
         self._translation_logvar_linear = nn.Linear(hidden_dimensions[0], 2)

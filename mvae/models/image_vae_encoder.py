@@ -3,7 +3,7 @@ import torch.nn as nn
 
 class ImageVaeEncoder(nn.Module):
     def __init__(self, hidden_dimensions, input_channels=3, kernel_size=3, max_pull=2,
-                 image_size=32):
+                 image_size=32, **_):
         super().__init__()
         padding = kernel_size // 2
         modules = []
