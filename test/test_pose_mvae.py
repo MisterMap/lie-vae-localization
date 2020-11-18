@@ -4,6 +4,7 @@ from mvae.data import ToyDataModule
 from mvae.models import PoseMVAEFactory
 import pytorch_lightning as pl
 from pytorch_lightning.utilities.parsing import AttributeDict
+from mvae.utils import TensorBoardLogger
 
 
 class TestPoseMVAE(unittest.TestCase):
@@ -29,5 +30,5 @@ class TestPoseMVAE(unittest.TestCase):
 
     # noinspection PyTypeChecker
     def test_training(self):
-        trainer = pl.Trainer(max_epochs=1, gpus=1)
+        trainer = pl.Trainer(logger=TensorBoardLogger("lightning_logs"), max_epochs=1, gpus=1)
         trainer.fit(self._model, self._data_module)

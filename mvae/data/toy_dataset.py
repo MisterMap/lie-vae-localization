@@ -10,6 +10,9 @@ class ToyDataset(Dataset):
         self._trajectory = data.item()["trajectory"]
         self._rotation_augmentation = rotation_augmentation
 
+    def set_rotation_augmentation(self, rotation_augmentation):
+        self._rotation_augmentation = rotation_augmentation
+
     def __len__(self):
         return len(self._trajectory)
 

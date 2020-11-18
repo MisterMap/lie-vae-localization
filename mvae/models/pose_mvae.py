@@ -3,6 +3,7 @@ import pytorch_lightning as pl
 import torch
 import torch.nn as nn
 import math
+from ..utils import *
 
 
 # noinspection PyArgumentList
@@ -28,7 +29,15 @@ class PoseMVAE(pl.LightningModule):
         self._pose_mu_linear = nn.Linear(pose_final_encoder_dimension, self.hparams.latent_dimension)
         self._pose_logvar_linear = nn.Linear(pose_final_encoder_dimension, self.hparams.latent_dimension)
 
+        self._centers = None
+        self._colors = None
+        self._lim_range = ((0, 1), (0, 1))
         self.init_weights()
+
+    def set_points_information(self, centers, colors, lim_range):
+        self._centers = centers
+        self._colors = colors
+        self._lim_range = lim_range
 
     def init_weights(self):
         for m in self.modules():
@@ -53,6 +62,27 @@ class PoseMVAE(pl.LightningModule):
             train_losses[f"train_{key}"] = value
         self.log_dict(train_losses)
         return losses["loss"]
+
+    def validation_step(self, batch, batch_index):
+        if batch_index == 0:
+            self.show_images(batch)
+        generated, losses = self.forward(batch)
+        val_losses = {}
+        for key, value in losses.items():
+            val_losses[f"val_{key}"] = value
+        self.log_dict(val_losses)
+        return losses["loss"]
+
+    def show_images(self, batch):
+        image_reconstruction_figure = show_pose_mvae_reconstruction(self, batch, 10)
+        self.logger.log_figure("image_reconstruction_figure", image_reconstruction_figure, self.global_step)
+        pose_reconstruction_figure = show_pose_mvae_reconstruction_pose(self, batch, 10)
+        self.logger.log_figure("pose_reconstruction_figure", pose_reconstruction_figure, self.global_step)
+        for i in range(2):
+            image_figure = show_image(batch, i)
+            self.logger.log_figure(f"image_{i}", image_figure, self.global_step)
+            image_figure = show_pose_sampling(self, batch, i, self._lim_range, self._centers, self._colors)
+            self.logger.log_figure(f"pose_sampling_{i}", image_figure, self.global_step)
 
     def generate_z(self, position, image):
         image_hidden = self.image_encoder(image)
