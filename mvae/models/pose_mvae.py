@@ -74,14 +74,16 @@ class PoseMVAE(pl.LightningModule):
         return losses["loss"]
 
     def show_images(self, batch):
-        image_reconstruction_figure = show_pose_mvae_reconstruction(self, batch, 10)
+        image_reconstruction_figure = show_pose_mvae_reconstruction(self, batch, 10, dpi=200, figsize=(3, 6),
+                                                                    facecolor="gray")
         self.logger.log_figure("image_reconstruction_figure", image_reconstruction_figure, self.global_step)
-        pose_reconstruction_figure = show_pose_mvae_reconstruction_pose(self, batch, 10)
+        pose_reconstruction_figure = show_pose_mvae_reconstruction_pose(self, batch, 10, dpi=200, figsize=(3, 6),
+                                                                        facecolor="gray")
         self.logger.log_figure("pose_reconstruction_figure", pose_reconstruction_figure, self.global_step)
         for i in range(2):
             image_figure = show_image(batch, i)
             self.logger.log_figure(f"image_{i}", image_figure, self.global_step)
-            image_figure = show_pose_sampling(self, batch, i, self._lim_range, self._centers, self._colors)
+            image_figure = show_pose_sampling(self, batch, i, self._lim_range, self._centers, self._colors, dpi=200)
             self.logger.log_figure(f"pose_sampling_{i}", image_figure, self.global_step)
 
     def generate_z(self, position, image):
