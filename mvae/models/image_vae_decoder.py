@@ -1,6 +1,6 @@
 import torch
 import torch.nn as nn
-from torchnlp.nn import Attention
+from .attention import AttentionBlock
 
 
 class ImageVaeDecoder(nn.Module):
@@ -25,7 +25,7 @@ class ImageVaeDecoder(nn.Module):
         self._last_dim = hidden_dimensions[-1]
         self._attention = None
         if attention:
-            self._attention = Attention(latent_space_size)
+            self._attention = AttentionBlock(latent_space_size)
 
     def forward(self, x):
         if self._attention is not None:
