@@ -1,7 +1,7 @@
 import torch.nn as nn
 import torch
 from .utils import activation_function
-from torchnlp.nn import Attention
+from .attention import AttentionBlock
 
 
 class PoseVaeDecoder(nn.Module):
@@ -21,7 +21,7 @@ class PoseVaeDecoder(nn.Module):
             self._rotation_logvar = nn.Parameter(torch.zeros(2))
         self._attention = None
         if attention:
-            self._attention = Attention(latent_space_size)
+            self._attention = AttentionBlock(latent_space_size)
 
     @staticmethod
     def make_modules(latent_space_size, hidden_dimensions, activation_type="relu", attention=False):
@@ -36,8 +36,7 @@ class PoseVaeDecoder(nn.Module):
 
     def forward(self, x):
         if self._attention is not None:
-            x, _ = self._attention(x[:, None, :], x[:, None, :])
-            x = x[:, 0, :]
+            x = self._attention(x)
         x = self._decoder(x)
         translation = self._translation_linear(x)
         rotation = self._rotation_linear(x)

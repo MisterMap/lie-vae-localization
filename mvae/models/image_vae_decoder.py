@@ -29,7 +29,6 @@ class ImageVaeDecoder(nn.Module):
 
     def forward(self, x):
         if self._attention is not None:
-            x, _ = self._attention(x[:, None, :], x[:, None, :])
-            x = x[:, 0, :]
+            x = self._attention(x)
         x = self._fc_latent(x).reshape(x.size()[0], self._last_dim, self._final_image_size, self._final_image_size)
         return torch.sigmoid(self._mu_deconv_part(x))
