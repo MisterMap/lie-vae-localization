@@ -1,4 +1,6 @@
 import numpy as np
+import torch
+import math
 
 
 def cvt_local2global(local_point, src_point):
@@ -52,3 +54,8 @@ def find_src(global_point, local_point):
     X = x1 - x * np.cos(A) + y * np.sin(A)
     Y = y1 - x * np.sin(A) - y * np.cos(A)
     return np.array([X, Y, A]).T
+
+
+def normal_log_prob(value, mu, logvar):
+    log_prob = -((value - mu) ** 2) / (2 * torch.exp(logvar)) - 0.5 * logvar - math.log(math.sqrt(2 * math.pi))
+    return log_prob

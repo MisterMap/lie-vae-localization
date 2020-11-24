@@ -2,23 +2,21 @@ import torch.nn as nn
 import torch
 from .utils import activation_function
 from .attention import AttentionBlock
+from .pose_distributions import pose_distribution
 
 
 class PoseVaeDecoder(nn.Module):
-    def __init__(self, latent_space_size, hidden_dimensions, activation_type="leaky_relu", attention=False,
-                 constant_logvar=False, **_):
+    def __init__(self, latent_space_size, pose_distribution_type, hidden_dimensions, activation_type="leaky_relu",
+                 attention=False, constant_logvar=False, **_):
         super().__init__()
-        self._translation_linear = nn.Linear(hidden_dimensions[0], 2)
-        self._translation_logvar_linear = nn.Linear(hidden_dimensions[0], 2)
-        self._rotation_linear = nn.Linear(hidden_dimensions[0], 2)
-        self._rotation_logvar_linear = nn.Linear(hidden_dimensions[0], 2)
+        self._pose_distribution = pose_distribution(pose_distribution_type)
+        self._mean_linear = nn.Linear(hidden_dimensions[0], self._pose_distribution.mean_dimension)
+        self._logvar_linear = nn.Linear(hidden_dimensions[0], self._pose_distribution.logvar_dimension)
         self._decoder = nn.Sequential(*self.make_modules(latent_space_size, hidden_dimensions, activation_type,
                                                          attention))
-        self._translation_logvar = None
-        self._rotation_logvar = None
+        self._logvar = None
         if constant_logvar:
-            self._translation_logvar = nn.Parameter(torch.zeros(2))
-            self._rotation_logvar = nn.Parameter(torch.zeros(2))
+            self._logvar = nn.Parameter(torch.zeros(self._pose_distribution.logvar_dimension))
         self._attention = None
         if attention:
             self._attention = AttentionBlock(latent_space_size)
@@ -38,13 +36,10 @@ class PoseVaeDecoder(nn.Module):
         if self._attention is not None:
             x = self._attention(x)
         x = self._decoder(x)
-        translation = self._translation_linear(x)
-        rotation = self._rotation_linear(x)
-        if self._translation_logvar is None:
-            translation_logvar = self._translation_logvar_linear(x)
-            rotation_logvar = self._rotation_logvar_linear(x)
+        mean = self._mean_linear(x)
+        if self._logvar is None:
+            logvar = self._logvar_linear(x)
         else:
-            translation_logvar = self._translation_logvar
-            rotation_logvar = self._rotation_logvar
-        return translation, rotation, translation_logvar, rotation_logvar
+            logvar = self._logvar
+        return mean, logvar
 

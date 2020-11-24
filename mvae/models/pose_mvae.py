@@ -1,8 +1,8 @@
-import numpy as np
+from .pose_distributions import pose_distribution
+
 import pytorch_lightning as pl
-import torch
 import torch.nn as nn
-import math
+
 from ..utils import *
 
 
@@ -15,6 +15,7 @@ class PoseMVAE(pl.LightningModule):
         self.image_decoder = image_decoder
         self.pose_encoder = pose_encoder
         self.pose_decoder = pose_decoder
+        self.pose_distribution = pose_distribution(params.pose_distribution)
 
         self._image_loss = nn.MSELoss(reduction="sum")
 
@@ -146,7 +147,7 @@ class PoseMVAE(pl.LightningModule):
 
         return self._reconstruct_image(pose_z_mu, pose_z_logvar, reparametrize)
 
-    def reconstruct_image_from_image(self, image,  reparametrize=True):
+    def reconstruct_image_from_image(self, image, reparametrize=True):
         image_hidden = self.image_encoder(image)
 
         image_z_mu = self._image_mu_linear(image_hidden)
@@ -195,23 +196,8 @@ class PoseMVAE(pl.LightningModule):
         return self._image_loss(x, target)
 
     def pose_nll_part_loss(self, reconstructed_pose, target_pose):
-        translation = reconstructed_pose[0]
-        rotation = torch.nn.functional.normalize(reconstructed_pose[1])
-
-        truth_translation = target_pose[0]
-        truth_rotation = torch.nn.functional.normalize(target_pose[1])
-
-        translation_logvar = reconstructed_pose[2]
-        rotation_logvar = reconstructed_pose[3]
-
-        translation_loss = -self.normal_log_prob(translation, truth_translation, translation_logvar)
-        rotation_loss = -self.normal_log_prob(rotation, truth_rotation, rotation_logvar)
-        return torch.sum(translation_loss) + torch.sum(rotation_loss)
-
-    @staticmethod
-    def normal_log_prob(value, mu, logvar):
-        log_prob = -((value - mu) ** 2) / (2 * torch.exp(logvar)) - 0.5 * logvar - math.log(math.sqrt(2 * math.pi))
-        return log_prob
+        log_prob = self.pose_distribution.log_prob(target_pose, reconstructed_pose[0], reconstructed_pose[1])
+        return torch.sum(log_prob)
 
     @staticmethod
     def kl(z_mean, z_logvar):

@@ -74,13 +74,7 @@ def show_pose_sampling(model, batch, index, range_lim, centers=None, colors=None
     z = image_z_mu + torch.exp(0.5 * image_z_logvar) * epsilon
     z = z.reshape(-1, latent_space)
     position = model.pose_decoder(z)
-    mu = position[0]
-    logvar = position[2]
-
-    epsilon = torch.randn_like(mu)
-
-    positions = mu + epsilon * torch.exp(0.5 * logvar)
-    positions = positions.cpu().detach().numpy()
+    positions = model.pose_distribution.sample(position[0], position[1])
     truth_position = batch["position"][index][0].cpu().detach().numpy()
 
     figure = plt.figure(**kwargs)

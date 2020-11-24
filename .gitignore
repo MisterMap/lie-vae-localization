@@ -1,5 +1,6 @@
 # Pacharm settings
 .idea/
+build
 
 # Venv
 venv/

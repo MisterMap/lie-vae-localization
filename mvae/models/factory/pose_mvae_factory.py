@@ -14,7 +14,7 @@ class PoseMVAEFactory(object):
         image_encoder = ImageVaeEncoder(**params.image_encoder)
         image_decoder = ImageVaeDecoder(params.latent_dimension, **params.image_encoder)
         pose_encoder = PoseVaeEncoder(**params.pose_encoder)
-        pose_decoder = PoseVaeDecoder(params.latent_dimension, **params.pose_encoder)
+        pose_decoder = PoseVaeDecoder(params.latent_dimension, params.pose_distribution, **params.pose_encoder)
         return PoseMVAE(params, image_encoder, image_decoder, pose_encoder, pose_decoder)
 
     @staticmethod
