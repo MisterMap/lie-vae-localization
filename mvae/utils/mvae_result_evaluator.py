@@ -75,7 +75,7 @@ def show_pose_sampling(model, batch, index, range_lim, centers=None, colors=None
     z = z.reshape(-1, latent_space)
     position = model.pose_decoder(z)
     positions = model.pose_distribution.sample(position[0], position[1])
-    truth_position = batch["position"][index][0].cpu().detach().numpy()
+    truth_position = batch["position"][0][index].cpu().detach().numpy()
 
     figure = plt.figure(**kwargs)
     plt.hist2d(positions[:, 0], positions[:, 1], range=range_lim, bins=(40, 40), cmap=plt.cm.jet)

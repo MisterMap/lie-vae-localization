@@ -81,7 +81,7 @@ class PoseMVAE(pl.LightningModule):
         pose_reconstruction_figure = show_pose_mvae_reconstruction_pose(self, batch, 10, dpi=200, figsize=(3, 6),
                                                                         facecolor="gray")
         self.logger.log_figure("pose_reconstruction_figure", pose_reconstruction_figure, self.global_step)
-        for i in range(2):
+        for i in range(min(3, batch["image"].shape[0])):
             image_figure = show_image(batch, i)
             self.logger.log_figure(f"image_{i}", image_figure, self.global_step)
             image_figure = show_pose_sampling(self, batch, i, self._lim_range, self._centers, self._colors, dpi=200)
@@ -189,7 +189,13 @@ class PoseMVAE(pl.LightningModule):
         return z
 
     def configure_optimizers(self):
+        if "betas" in self.hparams.optimizer.keys():
+            beta1 = float(self.hparams.optimizer.betas.split(" ")[0])
+            beta2 = float(self.hparams.optimizer.betas.split(" ")[1])
+            self.hparams.optimizer.betas = (beta1, beta2)
         optimizer = torch.optim.Adam(self.parameters(), **self.hparams.optimizer)
+        if "scheduler" in self.hparams.keys():
+            torch.optim.lr_scheduler.StepLR(optimizer, **self.hparams.scheduler)
         return optimizer
 
     def image_nll_part_loss(self, x, target):
