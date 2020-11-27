@@ -1,8 +1,7 @@
-from .pose_distributions import pose_distribution
-
 import pytorch_lightning as pl
 import torch.nn as nn
 
+from .pose_distributions import pose_distribution
 from ..utils import *
 
 
@@ -86,6 +85,12 @@ class PoseMVAE(pl.LightningModule):
             self.logger.log_figure(f"image_{i}", image_figure, self.global_step)
             image_figure = show_pose_sampling(self, batch, i, self._lim_range, self._centers, self._colors, dpi=200)
             self.logger.log_figure(f"pose_sampling_{i}", image_figure, self.global_step)
+            image_figure = show_pose_sampling_from_pose(self, batch, i, self._lim_range, self._centers, self._colors,
+                                                        dpi=200)
+            self.logger.log_figure(f"pose_sampling_from_pose_{i}", image_figure, self.global_step)
+            image_figure = show_pose_sampling_from_pose_image(self, batch, i, self._lim_range, self._centers,
+                                                              self._colors, dpi=200)
+            self.logger.log_figure(f"pose_sampling_from_pose_image_{i}", image_figure, self.global_step)
 
     def generate_z(self, position, image):
         image_hidden = self.image_encoder(image)

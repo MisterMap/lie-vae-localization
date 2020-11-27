@@ -89,3 +89,78 @@ def show_pose_sampling(model, batch, index, range_lim, centers=None, colors=None
     plt.ylim(range_lim[1][0], range_lim[1][1])
     plt.legend()
     return figure
+
+
+def show_pose_sampling_from_pose(model, batch, index, range_lim, centers=None, colors=None, **kwargs):
+    pose_hidden = model.pose_encoder([batch["position"][x][index][None] for x in range(2)])
+
+    pose_z_mu = model._pose_mu_linear(pose_hidden)
+    pose_z_logvar = model._pose_logvar_linear(pose_hidden)
+
+    latent_space = pose_z_logvar.shape[1]
+    batch_size = pose_z_logvar.shape[0]
+
+    mu = torch.cat([pose_z_mu[None], torch.zeros_like(pose_z_mu)[None]], dim=0)
+    logvar = torch.cat([pose_z_logvar[None], torch.zeros_like(pose_z_logvar)[None]], dim=0)
+
+    epsilon = torch.randn((100000, batch_size, latent_space), device=mu.device)
+    pose_z_mu, pose_z_logvar = model.calculate_distribution_product(mu, logvar)
+
+    z = pose_z_mu + torch.exp(0.5 * pose_z_logvar) * epsilon
+    z = z.reshape(-1, latent_space)
+    position = model.pose_decoder(z)
+    positions = model.pose_distribution.sample(position[0], position[1])
+    truth_position = batch["position"][0][index].cpu().detach().numpy()
+
+    figure = plt.figure(**kwargs)
+    plt.hist2d(positions[:, 0], positions[:, 1], range=range_lim, bins=(40, 40), cmap=plt.cm.jet)
+    plt.scatter(truth_position[None, 0], truth_position[None, 1], s=10, c="black", label="truth")
+    mean = np.mean(positions, 0)
+    plt.scatter(mean[None, 0], mean[None, 1], s=10, c="white", label="mean")
+    if colors is not None and centers is not None:
+        plt.scatter(centers[:, 0], centers[:, 1], c=colors / 255)
+    plt.gca().set_aspect("equal")
+    plt.xlim(range_lim[0][0], range_lim[0][1])
+    plt.ylim(range_lim[1][0], range_lim[1][1])
+    plt.legend()
+    return figure
+
+
+def show_pose_sampling_from_pose_image(model, batch, index, range_lim, centers=None, colors=None, **kwargs):
+    pose_hidden = model.pose_encoder([batch["position"][x][index][None] for x in range(2)])
+
+    pose_z_mu = model._pose_mu_linear(pose_hidden)
+    pose_z_logvar = model._pose_logvar_linear(pose_hidden)
+
+    image_hidden = model.image_encoder(batch["image"][index][None])
+
+    image_z_mu = model._image_mu_linear(image_hidden)
+    image_z_logvar = model._image_logvar_linear(image_hidden)
+
+    latent_space = pose_z_logvar.shape[1]
+    batch_size = pose_z_logvar.shape[0]
+
+    mu = torch.cat([pose_z_mu[None], image_z_mu[None], torch.zeros_like(pose_z_mu)[None]], dim=0)
+    logvar = torch.cat([pose_z_logvar[None], image_z_logvar[None], torch.zeros_like(pose_z_logvar)[None]], dim=0)
+
+    epsilon = torch.randn((100000, batch_size, latent_space), device=mu.device)
+    pose_z_mu, pose_z_logvar = model.calculate_distribution_product(mu, logvar)
+
+    z = pose_z_mu + torch.exp(0.5 * pose_z_logvar) * epsilon
+    z = z.reshape(-1, latent_space)
+    position = model.pose_decoder(z)
+    positions = model.pose_distribution.sample(position[0], position[1])
+    truth_position = batch["position"][0][index].cpu().detach().numpy()
+
+    figure = plt.figure(**kwargs)
+    plt.hist2d(positions[:, 0], positions[:, 1], range=range_lim, bins=(40, 40), cmap=plt.cm.jet)
+    plt.scatter(truth_position[None, 0], truth_position[None, 1], s=10, c="black", label="truth")
+    mean = np.mean(positions, 0)
+    plt.scatter(mean[None, 0], mean[None, 1], s=10, c="white", label="mean")
+    if colors is not None and centers is not None:
+        plt.scatter(centers[:, 0], centers[:, 1], c=colors / 255)
+    plt.gca().set_aspect("equal")
+    plt.xlim(range_lim[0][0], range_lim[0][1])
+    plt.ylim(range_lim[1][0], range_lim[1][1])
+    plt.legend()
+    return figure

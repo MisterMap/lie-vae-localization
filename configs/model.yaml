@@ -16,4 +16,4 @@ pose_encoder:
 pose_distribution: se2
 latent_dimension: 20
 beta: 0.1
-gamma: 0.01
+gamma: 0.02
