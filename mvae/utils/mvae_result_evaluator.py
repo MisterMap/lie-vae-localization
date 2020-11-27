@@ -52,7 +52,7 @@ def show_pose_mvae_reconstruction_pose(model, batch, image_count=10, reparametri
 def show_image(batch, index, **kwargs):
     figure = plt.figure(**kwargs)
     image = batch["image"][index].cpu().detach().permute(1, 2, 0).numpy()
-    plt.imshow(image)
+    plt.imshow(image, origin="lower")
     return figure
 
 

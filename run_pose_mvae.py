@@ -28,7 +28,7 @@ if arguments.seed is not None:
 trainer = pl.Trainer.from_argparse_args(arguments, logger=logger, deterministic=deterministic)
 
 # Make data module
-data_model = ToyDataModule(arguments.dataset)
+data_model = ToyDataModule(arguments.dataset, rotation_augmentation=False)
 
 # Load parameters
 params = load_hparams_from_yaml(arguments.config)
@@ -39,7 +39,7 @@ model = PoseMVAEFactory.make_model(params)
 data = np.load(arguments.dataset, allow_pickle=True)["arr_0"]
 centers = data.item()["point_centers"]
 colors = data.item()["point_colors"]
-model.set_points_information(centers, colors, ((0, 4), (0, 4)))
+model.set_points_information(centers, colors, ((0, 20), (0, 20)))
 
 print("Start training")
 trainer.fit(model, data_model)

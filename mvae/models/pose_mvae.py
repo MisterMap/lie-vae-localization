@@ -195,7 +195,8 @@ class PoseMVAE(pl.LightningModule):
             self.hparams.optimizer.betas = (beta1, beta2)
         optimizer = torch.optim.Adam(self.parameters(), **self.hparams.optimizer)
         if "scheduler" in self.hparams.keys():
-            torch.optim.lr_scheduler.StepLR(optimizer, **self.hparams.scheduler)
+            scheduler = torch.optim.lr_scheduler.StepLR(optimizer, **self.hparams.scheduler)
+            return [optimizer], [scheduler]
         return optimizer
 
     def image_nll_part_loss(self, x, target):

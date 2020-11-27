@@ -8,6 +8,7 @@ class ToyDataModule(pl.LightningDataModule):
         super().__init__()
         torch.random.manual_seed(seed)
         self._raw_train_dataset = ToyDataset(path, rotation_augmentation)
+        self._rotation_augmentation = rotation_augmentation
         self._batch_size = batch_size
         self._num_workers = num_workers
         train_length = len(self._raw_train_dataset)
@@ -18,7 +19,7 @@ class ToyDataModule(pl.LightningDataModule):
         print(f"[ToyDataModule] - validation dataset size {len(self._validation_dataset)}")
 
     def train_dataloader(self, *args, **kwargs):
-        self._raw_train_dataset.set_rotation_augmentation(True)
+        self._raw_train_dataset.set_rotation_augmentation(self._rotation_augmentation)
         return torch.utils.data.DataLoader(self._train_dataset, self._batch_size, True, pin_memory=True,
                                            num_workers=self._num_workers)
 

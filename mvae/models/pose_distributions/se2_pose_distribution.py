@@ -25,7 +25,7 @@ class Se2PoseDistribution(PoseDistribution):
         delta_log = torch.bmm(inverse_sigma_matrix, delta_log[:, :, None])[:, :, 0]
         log_determinant = self.get_logvar_determinant(logvar)
 
-        log_prob = torch.sum(delta_log ** 2 / 2., dim=1) + 0.5 * log_determinant # - 3 * math.log(math.sqrt(2 * math.pi))
+        log_prob = torch.sum(delta_log ** 2 / 2., dim=1) + 0.5 * log_determinant + 3 * math.log(math.sqrt(2 * math.pi))
         return log_prob
 
     def sample(self, mean, logvar):
