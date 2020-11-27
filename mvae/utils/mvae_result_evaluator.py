@@ -1,6 +1,7 @@
+import cv2
 import matplotlib.pyplot as plt
-import numpy as np
-import torch
+
+from .math import *
 
 
 def show_reconstruction(image_count, output_data, input_data, **kwargs):
@@ -163,4 +164,59 @@ def show_pose_sampling_from_pose_image(model, batch, index, range_lim, centers=N
     plt.xlim(range_lim[0][0], range_lim[0][1])
     plt.ylim(range_lim[1][0], range_lim[1][1])
     plt.legend()
+    return figure
+
+
+def get_image(centers, colors, image_size, radius, resolution, position):
+    mask = np.sum((centers - position[:2]) ** 2, axis=1) < (image_size + radius) ** 2
+    image_origin = cvt_local2global(np.array([-image_size / 2, -image_size / 2, 0]), position)
+    centers = cvt_global2local(centers[mask], image_origin) / resolution
+    image = np.ones((int(image_size // resolution),
+                     int(image_size // resolution), 3),
+                    dtype=np.uint8) * 255
+    for center, color in zip(centers, colors[mask]):
+        cv2.circle(image, (int(center[0]), int(center[1])), int(radius // resolution),
+                   (int(color[0]), int(color[1]), int(color[2])), thickness=-1)
+    image = cv2.blur(image, (int(radius // resolution // 2),
+                             int(radius // resolution // 2)))
+    return image
+
+
+def sample_pose_from_image(model, batch, index):
+    image_hidden = model.image_encoder(batch["image"][index][None])
+
+    image_z_mu = model._image_mu_linear(image_hidden)
+    image_z_logvar = model._image_logvar_linear(image_hidden)
+
+    latent_space = image_z_logvar.shape[1]
+    batch_size = image_z_logvar.shape[0]
+
+    mu = torch.cat([image_z_mu[None], torch.zeros_like(image_z_mu)[None]], dim=0)
+    logvar = torch.cat([image_z_logvar[None], torch.zeros_like(image_z_logvar)[None]], dim=0)
+
+    epsilon = torch.randn((3, batch_size, latent_space), device=mu.device)
+    image_z_mu, image_z_logvar = model.calculate_distribution_product(mu, logvar)
+
+    z = image_z_mu + torch.exp(0.5 * image_z_logvar) * epsilon
+    z = z.reshape(-1, latent_space)
+    position = model.pose_decoder(z)
+    positions = model.pose_distribution.sample_position(position[0], position[1])
+    return positions
+
+
+def show_image_from_pose_sampling(model, batch, indexes, image_size, radius, resolution, centers=None,
+                                  colors = None, **kwargs):
+
+    figure, axes = plt.subplots(len(indexes), 4, **kwargs)
+    if centers is None:
+        return figure
+    for i in range(len(indexes)):
+        image = batch["image"][indexes[i]].cpu().detach().permute(1, 2, 0).numpy()
+        axes[i][0].imshow(image, origin="lower")
+        axes[i][0].axis('off')
+        positions = sample_pose_from_image(model, batch, indexes[i])
+        for j, position in enumerate(positions):
+            image = get_image(centers, colors, image_size, radius, resolution, position)
+            axes[i][j + 1].imshow(image, origin="lower")
+            axes[i][j + 1].axis('off')
     return figure

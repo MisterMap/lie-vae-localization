@@ -42,6 +42,21 @@ class Se2PoseDistribution(PoseDistribution):
         translations = translations.cpu().detach().numpy()
         return translations
 
+    def sample_position(self, mean, logvar):
+        mean_matrix = self.make_matrix(mean[:, 0:2], torch.nn.functional.normalize(mean[:, 2:4]))
+        if logvar.dim() < 2:
+            logvar = logvar[None].expand(mean.shape[0], logvar.shape[0])
+        sigma_matrix = self.get_sigma_matrix(logvar)
+        epsilon = torch.randn(mean.shape[0], 3, device=mean.device)
+        delta = torch.bmm(sigma_matrix, epsilon[:, :, None])[:, :, 0]
+        position_matrix = torch.bmm(SE2.exp(delta).as_matrix(), mean_matrix)
+        positions = torch.zeros(mean.shape[0], 3)
+        positions[:, 0] = position_matrix[:, 0, 2]
+        positions[:, 1] = position_matrix[:, 1, 2]
+        positions[:, 2] = torch.atan2(position_matrix[:, 1, 0], position_matrix[:, 0, 0])
+        positions = positions.cpu().detach().numpy()
+        return positions
+
     @staticmethod
     def make_matrix(translation, rotation):
         matrix = torch.zeros(rotation.shape[0], 3, 3, device=translation.device)

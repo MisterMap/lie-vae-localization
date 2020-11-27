@@ -32,12 +32,18 @@ class PoseMVAE(pl.LightningModule):
         self._centers = None
         self._colors = None
         self._lim_range = ((0, 1), (0, 1))
+        self._radius = None
+        self._image_size = None
+        self._resolution = None
         self.init_weights()
 
-    def set_points_information(self, centers, colors, lim_range):
+    def set_points_information(self, centers, colors, lim_range, image_size, resolution, radius):
         self._centers = centers
         self._colors = colors
         self._lim_range = lim_range
+        self._image_size = image_size
+        self._resolution = resolution
+        self._radius = radius
 
     def init_weights(self):
         for m in self.modules():
@@ -80,6 +86,10 @@ class PoseMVAE(pl.LightningModule):
         pose_reconstruction_figure = show_pose_mvae_reconstruction_pose(self, batch, 10, dpi=200, figsize=(3, 6),
                                                                         facecolor="gray")
         self.logger.log_figure("pose_reconstruction_figure", pose_reconstruction_figure, self.global_step)
+        image_figure = show_image_from_pose_sampling(self, batch, [0, 1, 2, 3, 4], self._image_size,
+                                                     self._radius, self._resolution, self._centers, self._colors,
+                                                     dpi=200, figsize=(6, 6), facecolor="gray")
+        self.logger.log_figure("image_from_pose_sampling", image_figure, self.global_step)
         for i in range(min(3, batch["image"].shape[0])):
             image_figure = show_image(batch, i)
             self.logger.log_figure(f"image_{i}", image_figure, self.global_step)
