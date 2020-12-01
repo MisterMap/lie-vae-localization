@@ -29,7 +29,11 @@ class TestPoseMVAE(unittest.TestCase):
             latent_dimension=128,
             beta=1,
             gamma=0,
-            pose_distribution="se2"
+            pose_distribution="se2",
+            pose_augmentation=False,
+            separate_elbo=True,
+            delta_position=1,
+            delta_angle=1,
         )
         self._model = PoseMVAEFactory().make_model(params)
 

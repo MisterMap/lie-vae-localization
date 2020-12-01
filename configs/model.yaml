@@ -17,3 +17,6 @@ pose_distribution: se2
 latent_dimension: 20
 beta: 0.1
 gamma: 0.02
+
+pose_augmentation: False
+separate_elbo: False

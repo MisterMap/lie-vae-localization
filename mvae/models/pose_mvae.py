@@ -3,6 +3,7 @@ import torch.nn as nn
 
 from .pose_distributions import pose_distribution
 from ..utils import *
+import torch
 
 
 # noinspection PyArgumentList
@@ -127,6 +128,82 @@ class PoseMVAE(pl.LightningModule):
         result_mu = torch.sum(mu * weights, dim=0)
         return result_mu, result_logvar
 
+    def random_position(self, position):
+        angle = torch.atan2(position[1][:, 0], position[1][:, 1]) + torch.randn_like(
+            position[1][:, 0]) * self.hparams.delta_angle
+        rotation = torch.zeros_like(position[1])
+        rotation[:, 0] = torch.sin(angle)
+        rotation[:, 1] = torch.cos(angle)
+        position = [position[0] + torch.randn_like(position[0]) * self.hparams.delta_position, rotation]
+        return position
+
+    def pose_augmentation_loss(self, batch):
+        position = self.random_position(batch["position"])
+        pose_hidden = self.pose_encoder(position)
+        pose_z_mu = self._pose_mu_linear(pose_hidden)
+        pose_z_logvar = self._pose_logvar_linear(pose_hidden)
+        mu = torch.cat([pose_z_mu[None], torch.zeros_like(pose_z_mu)[None]], dim=0)
+        logvar = torch.cat([pose_z_logvar[None], torch.zeros_like(pose_z_logvar)[None]], dim=0)
+
+        z_mu, z_logvar = self.calculate_distribution_product(mu, logvar)
+        z = self.reparametrize(z_mu, z_logvar)
+        batch_size = position[0].shape[0]
+        kl_part = self.kl(z_mu, z_logvar) / batch_size
+        reconstructed_position = self.pose_decoder(z)
+        pose_nll_part = self.pose_nll_part_loss(reconstructed_position, position) / batch_size
+        beta = self.calculate_beta()
+        loss = kl_part * beta + pose_nll_part
+        losses = {
+            "augmentation_loss": loss,
+            "augmentation_kl_part": kl_part,
+            "augmentation_nll_part": pose_nll_part
+        }
+        return losses
+
+    def pose_elbo(self, position):
+        pose_hidden = self.pose_encoder(position)
+        pose_z_mu = self._pose_mu_linear(pose_hidden)
+        pose_z_logvar = self._pose_logvar_linear(pose_hidden)
+        mu = torch.cat([pose_z_mu[None], torch.zeros_like(pose_z_mu)[None]], dim=0)
+        logvar = torch.cat([pose_z_logvar[None], torch.zeros_like(pose_z_logvar)[None]], dim=0)
+
+        z_mu, z_logvar = self.calculate_distribution_product(mu, logvar)
+        z = self.reparametrize(z_mu, z_logvar)
+        batch_size = position[0].shape[0]
+        kl_part = self.kl(z_mu, z_logvar) / batch_size
+        reconstructed_position = self.pose_decoder(z)
+        pose_nll_part = self.pose_nll_part_loss(reconstructed_position, position) / batch_size
+        beta = self.calculate_beta()
+        loss = kl_part * beta + pose_nll_part
+        losses = {
+            "pose_elbo_loss": loss,
+            "pose_elbo_kl_part": kl_part,
+            "pose_elbo_nll_part": pose_nll_part
+        }
+        return losses
+
+    def image_elbo(self, image):
+        image_hidden = self.image_encoder(image)
+        image_z_mu = self._image_mu_linear(image_hidden)
+        image_z_logvar = self._image_logvar_linear(image_hidden)
+        mu = torch.cat([image_z_mu[None], torch.zeros_like(image_z_mu)[None]], dim=0)
+        logvar = torch.cat([image_z_logvar[None], torch.zeros_like(image_z_logvar)[None]], dim=0)
+
+        z_mu, z_logvar = self.calculate_distribution_product(mu, logvar)
+        z = self.reparametrize(z_mu, z_logvar)
+        batch_size = image.shape[0]
+        kl_part = self.kl(z_mu, z_logvar) / batch_size
+        reconstructed_image = self.image_decoder(z)
+        pose_nll_part = self.image_nll_part_loss(reconstructed_image, image) / batch_size
+        beta = self.calculate_beta()
+        loss = kl_part * beta + pose_nll_part
+        losses = {
+            "image_elbo_loss": loss,
+            "image_elbo_kl_part": kl_part,
+            "image_elbo_nll_part": pose_nll_part
+        }
+        return losses
+
     def forward(self, batch):
         position = batch["position"]
         image = batch["image"]
@@ -148,6 +225,16 @@ class PoseMVAE(pl.LightningModule):
             "image_nll_part": image_nll_part,
             "pose_nll_part": pose_nll_part,
         }
+        if self.hparams.pose_augmentation:
+            augmentation_loss = self.pose_augmentation_loss(batch)
+            losses.update(augmentation_loss)
+            losses["loss"] += augmentation_loss["augmentation_loss"]
+        if self.hparams.separate_elbo:
+            image_loss = self.image_elbo(batch["image"])
+            losses.update(image_loss)
+            position_loss = self.pose_elbo(batch["position"])
+            losses.update(position_loss)
+            losses["loss"] += image_loss["image_elbo_loss"] + position_loss["pose_elbo_loss"]
         reconstructed_output = {
             "image": reconstructed_image,
             "position": reconstructed_position
