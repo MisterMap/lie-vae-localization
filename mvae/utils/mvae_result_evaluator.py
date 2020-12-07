@@ -2,6 +2,7 @@ import cv2
 import matplotlib.pyplot as plt
 
 from .math import *
+from .math_torch import *
 
 
 def show_reconstruction(image_count, output_data, input_data, **kwargs):
@@ -33,11 +34,11 @@ def show_pose_mvae_reconstruction(model, batch, image_count=10, **kwargs):
     return figure
 
 
-def show_pose_mvae_reconstruction_pose(model, batch, image_count=10, reparametrize=True, **kwargs):
+def show_pose_mvae_reconstruction_pose(model, batch, image_count=10, **kwargs):
     figure = plt.figure(**kwargs)
     input_data = batch["image"]
     pose = batch["position"]
-    output_data = model.reconstruct_image_from_position(pose, reparametrize)
+    output_data = model.reconstruct_image_from_pose(pose)
     images = output_data.detach().cpu().permute(0, 2, 3, 1).numpy()[:, :, :]
     input_images = input_data.detach().cpu().permute(0, 2, 3, 1).numpy()[:, :, :]
     for i in range(image_count):
@@ -57,27 +58,15 @@ def show_image(batch, index, **kwargs):
     return figure
 
 
-def show_pose_sampling(model, batch, index, range_lim, centers=None, colors=None, **kwargs):
-    image_hidden = model.image_encoder(batch["image"][index][None])
-
-    image_z_mu = model._image_mu_linear(image_hidden)
-    image_z_logvar = model._image_logvar_linear(image_hidden)
-
-    latent_space = image_z_logvar.shape[1]
-    batch_size = image_z_logvar.shape[0]
-
-    mu = torch.cat([image_z_mu[None], torch.zeros_like(image_z_mu)[None]], dim=0)
-    logvar = torch.cat([image_z_logvar[None], torch.zeros_like(image_z_logvar)[None]], dim=0)
-
-    epsilon = torch.randn((100000, batch_size, latent_space), device=mu.device)
-    image_z_mu, image_z_logvar = model.calculate_distribution_product(mu, logvar)
-
-    z = image_z_mu + torch.exp(0.5 * image_z_logvar) * epsilon
+def show_pose_distribution(z_mu, z_logvar, model, batch, index, range_lim, centers=None, colors=None, **kwargs):
+    batch_size = z_mu.shape[0]
+    latent_space = z_mu.shape[1]
+    epsilon = torch.randn((100, batch_size, latent_space), device=z_mu.device)
+    z = z_mu + torch.exp(0.5 * z_logvar) * epsilon
     z = z.reshape(-1, latent_space)
-    position = model.pose_decoder(z)
-    positions = model.pose_distribution.sample(position[0], position[1])
+    position = model.pose_vae.decoder(z)
+    positions = model.pose_vae.pose_distribution.sample(position[0], position[1])
     truth_position = batch["position"][0][index].cpu().detach().numpy()
-
     figure = plt.figure(**kwargs)
     plt.hist2d(positions[:, 0], positions[:, 1], range=range_lim, bins=(40, 40), cmap=plt.cm.jet)
     plt.scatter(truth_position[None, 0], truth_position[None, 1], s=10, c="black", label="truth")
@@ -90,81 +79,25 @@ def show_pose_sampling(model, batch, index, range_lim, centers=None, colors=None
     plt.ylim(range_lim[1][0], range_lim[1][1])
     plt.legend()
     return figure
+
+
+def show_pose_sampling_from_image(model, batch, index, range_lim, centers=None, colors=None, **kwargs):
+    z_mu, z_logvar = deregularize_normal_distribution(*model.image_vae.generate_z(batch["image"][index][None]))
+    return show_pose_distribution(z_mu, z_logvar, model, batch, index, range_lim, centers, colors, **kwargs)
 
 
 def show_pose_sampling_from_pose(model, batch, index, range_lim, centers=None, colors=None, **kwargs):
-    pose_hidden = model.pose_encoder([batch["position"][x][index][None] for x in range(2)])
-
-    pose_z_mu = model._pose_mu_linear(pose_hidden)
-    pose_z_logvar = model._pose_logvar_linear(pose_hidden)
-
-    latent_space = pose_z_logvar.shape[1]
-    batch_size = pose_z_logvar.shape[0]
-
-    mu = torch.cat([pose_z_mu[None], torch.zeros_like(pose_z_mu)[None]], dim=0)
-    logvar = torch.cat([pose_z_logvar[None], torch.zeros_like(pose_z_logvar)[None]], dim=0)
-
-    epsilon = torch.randn((100000, batch_size, latent_space), device=mu.device)
-    pose_z_mu, pose_z_logvar = model.calculate_distribution_product(mu, logvar)
-
-    z = pose_z_mu + torch.exp(0.5 * pose_z_logvar) * epsilon
-    z = z.reshape(-1, latent_space)
-    position = model.pose_decoder(z)
-    positions = model.pose_distribution.sample(position[0], position[1])
-    truth_position = batch["position"][0][index].cpu().detach().numpy()
-
-    figure = plt.figure(**kwargs)
-    plt.hist2d(positions[:, 0], positions[:, 1], range=range_lim, bins=(40, 40), cmap=plt.cm.jet)
-    plt.scatter(truth_position[None, 0], truth_position[None, 1], s=10, c="black", label="truth")
-    mean = np.mean(positions, 0)
-    plt.scatter(mean[None, 0], mean[None, 1], s=10, c="white", label="mean")
-    if colors is not None and centers is not None:
-        plt.scatter(centers[:, 0], centers[:, 1], c=colors / 255)
-    plt.gca().set_aspect("equal")
-    plt.xlim(range_lim[0][0], range_lim[0][1])
-    plt.ylim(range_lim[1][0], range_lim[1][1])
-    plt.legend()
-    return figure
+    position = batch["position"]
+    position = (position[0][index][None], position[1][index][None])
+    z_mu, z_logvar = deregularize_normal_distribution(*model.pose_vae.generate_z(position))
+    return show_pose_distribution(z_mu, z_logvar, model, batch, index, range_lim, centers, colors, **kwargs)
 
 
-def show_pose_sampling_from_pose_image(model, batch, index, range_lim, centers=None, colors=None, **kwargs):
-    pose_hidden = model.pose_encoder([batch["position"][x][index][None] for x in range(2)])
-
-    pose_z_mu = model._pose_mu_linear(pose_hidden)
-    pose_z_logvar = model._pose_logvar_linear(pose_hidden)
-
-    image_hidden = model.image_encoder(batch["image"][index][None])
-
-    image_z_mu = model._image_mu_linear(image_hidden)
-    image_z_logvar = model._image_logvar_linear(image_hidden)
-
-    latent_space = pose_z_logvar.shape[1]
-    batch_size = pose_z_logvar.shape[0]
-
-    mu = torch.cat([pose_z_mu[None], image_z_mu[None], torch.zeros_like(pose_z_mu)[None]], dim=0)
-    logvar = torch.cat([pose_z_logvar[None], image_z_logvar[None], torch.zeros_like(pose_z_logvar)[None]], dim=0)
-
-    epsilon = torch.randn((100000, batch_size, latent_space), device=mu.device)
-    pose_z_mu, pose_z_logvar = model.calculate_distribution_product(mu, logvar)
-
-    z = pose_z_mu + torch.exp(0.5 * pose_z_logvar) * epsilon
-    z = z.reshape(-1, latent_space)
-    position = model.pose_decoder(z)
-    positions = model.pose_distribution.sample(position[0], position[1])
-    truth_position = batch["position"][0][index].cpu().detach().numpy()
-
-    figure = plt.figure(**kwargs)
-    plt.hist2d(positions[:, 0], positions[:, 1], range=range_lim, bins=(40, 40), cmap=plt.cm.jet)
-    plt.scatter(truth_position[None, 0], truth_position[None, 1], s=10, c="black", label="truth")
-    mean = np.mean(positions, 0)
-    plt.scatter(mean[None, 0], mean[None, 1], s=10, c="white", label="mean")
-    if colors is not None and centers is not None:
-        plt.scatter(centers[:, 0], centers[:, 1], c=colors / 255)
-    plt.gca().set_aspect("equal")
-    plt.xlim(range_lim[0][0], range_lim[0][1])
-    plt.ylim(range_lim[1][0], range_lim[1][1])
-    plt.legend()
-    return figure
+def show_pose_sampling_from_joint(model, batch, index, range_lim, centers=None, colors=None, **kwargs):
+    position = batch["position"]
+    position = (position[0][index][None], position[1][index][None])
+    z_mu, z_logvar = model.generate_z(position, batch["image"][index][None])
+    return show_pose_distribution(z_mu, z_logvar, model, batch, index, range_lim, centers, colors, **kwargs)
 
 
 def get_image(centers, colors, image_size, radius, resolution, position):
@@ -182,31 +115,8 @@ def get_image(centers, colors, image_size, radius, resolution, position):
     return image
 
 
-def sample_pose_from_image(model, batch, index):
-    image_hidden = model.image_encoder(batch["image"][index][None])
-
-    image_z_mu = model._image_mu_linear(image_hidden)
-    image_z_logvar = model._image_logvar_linear(image_hidden)
-
-    latent_space = image_z_logvar.shape[1]
-    batch_size = image_z_logvar.shape[0]
-
-    mu = torch.cat([image_z_mu[None], torch.zeros_like(image_z_mu)[None]], dim=0)
-    logvar = torch.cat([image_z_logvar[None], torch.zeros_like(image_z_logvar)[None]], dim=0)
-
-    epsilon = torch.randn((3, batch_size, latent_space), device=mu.device)
-    image_z_mu, image_z_logvar = model.calculate_distribution_product(mu, logvar)
-
-    z = image_z_mu + torch.exp(0.5 * image_z_logvar) * epsilon
-    z = z.reshape(-1, latent_space)
-    position = model.pose_decoder(z)
-    positions = model.pose_distribution.sample_position(position[0], position[1])
-    return positions
-
-
 def show_image_from_pose_sampling(model, batch, indexes, image_size, radius, resolution, centers=None,
-                                  colors = None, **kwargs):
-
+                                  colors=None, **kwargs):
     figure, axes = plt.subplots(len(indexes), 4, **kwargs)
     if centers is None:
         return figure
@@ -214,8 +124,8 @@ def show_image_from_pose_sampling(model, batch, indexes, image_size, radius, res
         image = batch["image"][indexes[i]].cpu().detach().permute(1, 2, 0).numpy()
         axes[i][0].imshow(image, origin="lower")
         axes[i][0].axis('off')
-        positions = sample_pose_from_image(model, batch, indexes[i])
-        for j, position in enumerate(positions):
+        for j in range(3):
+            position = model.sample_pose_from_image(batch["image"][indexes[i]][None])[0]
             image = get_image(centers, colors, image_size, radius, resolution, position)
             axes[i][j + 1].imshow(image, origin="lower")
             axes[i][j + 1].axis('off')
