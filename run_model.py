@@ -2,7 +2,6 @@ from argparse import ArgumentParser
 
 import numpy as np
 import pytorch_lightning as pl
-from pytorch_lightning.utilities.parsing import AttributeDict
 
 from mvae.data import ToyDataModule
 from mvae.models import PoseMVAEFactory
@@ -35,7 +34,7 @@ params = load_hparams_from_yaml(arguments.config)
 print("Load model from params \n" + str(params))
 
 # Make model
-model = PoseMVAEFactory.make_model(params)
+model = PoseMVAEFactory().make_model(params)
 data = np.load(arguments.dataset, allow_pickle=True)["arr_0"]
 centers = data.item()["point_centers"]
 colors = data.item()["point_colors"]

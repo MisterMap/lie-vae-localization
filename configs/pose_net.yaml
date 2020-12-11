@@ -1,0 +1,18 @@
+model_name: pose_net
+optimizer:
+    lr: 0.0003
+    betas: 0.9 0.9
+scheduler:
+    step_size: 20
+    gamma: 0.7
+image_encoder:
+    hidden_dimensions: [16, 32, 64, 128]
+    attention: False
+pose_encoder:
+    hidden_dimensions: [256, 256]
+    constant_logvar: False
+    activation_type: tanh
+    attention: False
+
+pose_distribution: se2
+latent_dimension: 256

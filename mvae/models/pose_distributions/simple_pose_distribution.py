@@ -35,3 +35,20 @@ class SimplePoseDistribution(PoseDistribution):
         positions = mu + epsilon * torch.exp(0.5 * logvar)
         positions = positions.cpu().detach().numpy()
         return positions
+
+    def sample_position(self, mean, logvar):
+        if logvar.dim() < 2:
+            logvar = logvar[None]
+        mu = mean[:, 0:2]
+        epsilon = torch.randn_like(mu)
+        translations = mu + epsilon * torch.exp(0.5 * logvar[:, 0:2])
+
+        mu = torch.nn.functional.normalize(mean[:, 2:4])
+        epsilon = torch.randn_like(mu)
+        rotations = mu + epsilon * torch.exp(0.5 * logvar[:, 2:4])
+        positions = torch.zeros(mean.shape[0], 3)
+        positions[:, 0] = translations[:, 0]
+        positions[:, 1] = translations[:, 1]
+        positions[:, 2] = torch.atan2(rotations[:, 1], rotations[:, 0])
+        return positions.detach().cpu().numpy()
+
