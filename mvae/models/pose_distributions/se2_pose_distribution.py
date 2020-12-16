@@ -16,14 +16,16 @@ class Se2PoseDistribution(PoseDistribution):
     def log_prob(self, value, mean, logvar):
         if logvar.dim() < 2:
             logvar = logvar[None].expand(mean.shape[0], logvar.shape[0])
-        mean_matrix = self.make_matrix(mean[:, 0:2], torch.nn.functional.normalize(mean[:, 2:4]))
         value_matrix = self.make_matrix(value[0], torch.nn.functional.normalize(value[1]))
+        rotation = torch.nn.functional.normalize(mean[:, 2:4])
+        mean_matrix = self.make_matrix(mean[:, 0:2], rotation).expand_as(
+            value_matrix)
         delta_matrix = torch.bmm(self.pose_matrix_inverse(mean_matrix), value_matrix)
-        delta_log = SE2.log(SE2.from_matrix(delta_matrix, normalize=True))
+        delta_log = SE2.log(SE2.from_matrix(delta_matrix, normalize=False))
         if delta_log.dim() < 2:
             delta_log = delta_log[None]
-
-        inverse_sigma_matrix = self.get_inverse_sigma_matrix(logvar)
+        inverse_sigma_matrix = self.get_inverse_sigma_matrix(logvar).expand(delta_log.shape[0], delta_log.shape[1],
+                                                                            delta_log.shape[1])
         delta_log = torch.bmm(inverse_sigma_matrix, delta_log[:, :, None])[:, :, 0]
         log_determinant = self.get_logvar_determinant(logvar)
 
@@ -94,12 +96,10 @@ class Se2PoseDistribution(PoseDistribution):
         matrix[:, 0, 0] = torch.exp(0.5 * logvar[:, 0])
         matrix[:, 1, 1] = torch.exp(0.5 * logvar[:, 1])
         matrix[:, 2, 2] = torch.exp(0.5 * logvar[:, 2])
-        # matrix[:, 1, 0] = torch.exp(0.25 * logvar[:, 1] + 0.25 * logvar[:, 0]) * torch.sinh(logvar[:, 3])
-        # matrix[:, 2, 1] = torch.exp(0.25 * logvar[:, 1] + 0.25 * logvar[:, 2]) * torch.sinh(logvar[:, 4])
-        # matrix[:, 2, 0] = torch.exp(0.25 * logvar[:, 2] + 0.25 * logvar[:, 0]) * torch.sinh(logvar[:, 5])
-        # matrix[:, 1, 0] = torch.sinh(logvar[:, 3])
-        # matrix[:, 2, 1] = torch.sinh(logvar[:, 4])
-        # matrix[:, 2, 0] = torch.sinh(logvar[:, 5])
+        matrix[:, 1, 0] = torch.exp(0.25 * logvar[:, 1] + 0.25 * logvar[:, 0]) * torch.sinh(logvar[:, 3])
+        matrix[:, 2, 1] = torch.exp(0.25 * logvar[:, 1] + 0.25 * logvar[:, 2]) * torch.sinh(logvar[:, 4])
+        matrix[:, 2, 0] = torch.exp(0.25 * logvar[:, 2] + 0.25 * logvar[:, 0]) * torch.sinh(logvar[:, 5])
+        matrix = matrix.permute(0, 2, 1)
         return matrix
 
     @staticmethod
@@ -115,14 +115,8 @@ class Se2PoseDistribution(PoseDistribution):
         b = torch.exp(0.25 * logvar[:, 1] + 0.25 * logvar[:, 0]) * torch.sinh(logvar[:, 3])
         e = torch.exp(0.25 * logvar[:, 1] + 0.25 * logvar[:, 2]) * torch.sinh(logvar[:, 4])
         c = torch.exp(0.25 * logvar[:, 0] + 0.25 * logvar[:, 2]) * torch.sinh(logvar[:, 5])
-        # b = torch.sinh(logvar[:, 3])
-        # e = torch.sinh(logvar[:, 4])
-        # c = torch.sinh(logvar[:, 5])
-        b = 0
-        e = 0
-        c = 0
         b1 = - b * a1 * d1
-        e1 = - e * b1 * f1
+        e1 = - e * d1 * f1
         c1 = - c * a1 * f1 - e * b1 * f1
         matrix[:, 0, 0] = a1
         matrix[:, 1, 1] = d1
@@ -130,4 +124,5 @@ class Se2PoseDistribution(PoseDistribution):
         matrix[:, 1, 0] = b1
         matrix[:, 2, 1] = e1
         matrix[:, 2, 0] = c1
+        matrix = matrix.permute(0, 2, 1)
         return matrix
