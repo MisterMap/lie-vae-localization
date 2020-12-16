@@ -92,7 +92,7 @@ class PoseNet(pl.LightningModule):
         hidden = self.encoder(image)
         hidden = self._hidden_layer(hidden)
         position = self.decoder(hidden)
-        return self.pose_distribution.sample_position(position[0], position[1])
+        return self.pose_distribution.sample(position[0], position[1])
 
     def configure_optimizers(self):
         if "betas" in self.hparams.optimizer.keys():

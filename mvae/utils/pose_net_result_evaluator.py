@@ -8,7 +8,7 @@ def show_pose_sampling_from_image(model, batch, index, range_lim, centers=None, 
                    "position": (batch["position"][0][index][None], batch["position"][1][index][None])}
     position, loss = model.forward(small_batch)
     position = (position[0].repeat_interleave(10000, dim=0), position[1].repeat_interleave(10000, dim=0))
-    positions = model.pose_distribution.sample(position[0], position[1])
+    positions = model.pose_distribution.sample(position[0], position[1])[:, :2]
     truth_position = batch["position"][0][index].cpu().detach().numpy()
     figure = plt.figure(**kwargs)
     plt.hist2d(positions[:, 0], positions[:, 1], range=range_lim, bins=(40, 40), cmap=plt.cm.jet)

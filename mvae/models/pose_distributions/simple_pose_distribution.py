@@ -27,16 +27,6 @@ class SimplePoseDistribution(PoseDistribution):
         return translation_loss + rotation_loss
 
     def sample(self, mean, logvar):
-        mu = mean[:, 0:2]
-        logvar = logvar[:, 0:2]
-
-        epsilon = torch.randn_like(mu)
-
-        positions = mu + epsilon * torch.exp(0.5 * logvar)
-        positions = positions.cpu().detach().numpy()
-        return positions
-
-    def sample_position(self, mean, logvar):
         if logvar.dim() < 2:
             logvar = logvar[None]
         mu = mean[:, 0:2]
