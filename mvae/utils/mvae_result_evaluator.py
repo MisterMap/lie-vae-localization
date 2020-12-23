@@ -61,7 +61,7 @@ def show_image(batch, index, **kwargs):
 def show_pose_distribution(z_mu, z_logvar, model, batch, index, range_lim, centers=None, colors=None, **kwargs):
     batch_size = z_mu.shape[0]
     latent_space = z_mu.shape[1]
-    epsilon = torch.randn((100, batch_size, latent_space), device=z_mu.device)
+    epsilon = torch.randn((10000, batch_size, latent_space), device=z_mu.device)
     z = z_mu + torch.exp(0.5 * z_logvar) * epsilon
     z = z.reshape(-1, latent_space)
     position = model.pose_vae.decoder(z)

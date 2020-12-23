@@ -15,6 +15,7 @@ class ToyDataModule(pl.LightningDataModule):
         lengths = int(train_length * split[0]), train_length - int(train_length * split[0])
 
         self._train_dataset, self._validation_dataset = torch.utils.data.random_split(self._raw_train_dataset, lengths)
+        print(f"{self._validation_dataset.indices[0]}")
         print(f"[ToyDataModule] - train dataset size {len(self._train_dataset)}")
         print(f"[ToyDataModule] - validation dataset size {len(self._validation_dataset)}")
 

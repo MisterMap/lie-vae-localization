@@ -15,6 +15,7 @@ class TestPoseMVAE(unittest.TestCase):
         dataset_folder = os.path.join(current_folder, "datasets", "toy_dataset", "dataset.npz")
         self._data_module = ToyDataModule(dataset_folder)
         params = AttributeDict(
+            model_name="pose_mvae",
             optimizer=AttributeDict(),
             image_encoder=AttributeDict(
                 hidden_dimensions=[16, 32, 64],

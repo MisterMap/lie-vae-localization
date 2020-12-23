@@ -19,15 +19,17 @@ logger = TensorBoardLogger("lightning_logs")
 
 # Seed
 deterministic = False
+seed = 0
 if arguments.seed is not None:
     pl.seed_everything(arguments.seed)
     deterministic = True
+    seed = arguments.seed
 
 # Make trainer
 trainer = pl.Trainer.from_argparse_args(arguments, logger=logger, deterministic=deterministic)
 
 # Make data module
-data_model = ToyDataModule(arguments.dataset, rotation_augmentation=False)
+data_model = ToyDataModule(arguments.dataset, rotation_augmentation=False, seed=seed)
 
 # Load parameters
 params = load_hparams_from_yaml(arguments.config)

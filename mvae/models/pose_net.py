@@ -56,6 +56,7 @@ class PoseNet(pl.LightningModule):
         if batch_index == 0:
             self.show_images(batch)
         generated, losses = self.forward(batch)
+        losses["rmse"] = self.calculate_rmse(batch)
         val_losses = {}
         for key, value in losses.items():
             val_losses[f"val_{key}"] = value
@@ -93,6 +94,19 @@ class PoseNet(pl.LightningModule):
         hidden = self._hidden_layer(hidden)
         position = self.decoder(hidden)
         return self.pose_distribution.sample(position[0], position[1])
+
+    def mean_position(self, image):
+        hidden = self.encoder(image)
+        hidden = self._hidden_layer(hidden)
+        position = self.decoder(hidden)
+        return position[0]
+
+    def calculate_rmse(self, batch):
+        image = batch["image"]
+        position = batch["position"]
+        mean_position = self.mean_position(image)
+        return torch.mean(torch.sqrt((mean_position[0] - position[0][0]) ** 2 +
+                                     (mean_position[1] - position[0][1]) ** 2))
 
     def configure_optimizers(self):
         if "betas" in self.hparams.optimizer.keys():

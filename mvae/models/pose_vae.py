@@ -14,4 +14,4 @@ class PoseVAE(VAEBase):
         return torch.sum(log_prob)
 
     def sample_x(self, z):
-        return self.pose_distribution.sample(self.decoder(z))
+        return self.pose_distribution.sample(*self.decoder(z))
