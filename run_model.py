@@ -40,7 +40,11 @@ model = PoseMVAEFactory().make_model(params)
 data = np.load(arguments.dataset, allow_pickle=True)["arr_0"]
 centers = data.item()["point_centers"]
 colors = data.item()["point_colors"]
-model.set_points_information(centers, colors, ((0, 20), (0, 20)), 3.2, 0.1, 0.6)
+if "map_size" in data.item().keys():
+    map_size = data.item()["map_size"]
+else:
+    map_size = (4, 4)
+model.set_points_information(centers, colors, ((0, map_size[0]), (0, map_size[1])), 3.2, 0.1, 0.6)
 
 print("Start training")
 trainer.fit(model, data_model)

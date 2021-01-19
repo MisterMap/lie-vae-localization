@@ -110,3 +110,6 @@ class Se2PoseDistribution(PoseDistribution):
         matrix[:, 2, 0] = c1
         matrix = matrix.permute(0, 2, 1)
         return matrix
+
+    def mean_position(self, mean, logvar):
+        return mean[:, 0:2]

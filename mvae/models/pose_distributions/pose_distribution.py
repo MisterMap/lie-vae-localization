@@ -12,3 +12,6 @@ class PoseDistribution(object):
 
     def log_prob(self, value, mean, logvar):
         raise NotImplementedError
+
+    def mean_position(self, mean, logvar):
+        raise NotImplementedError

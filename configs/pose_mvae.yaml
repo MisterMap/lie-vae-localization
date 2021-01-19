@@ -14,7 +14,7 @@ pose_encoder:
     activation_type: tanh
     attention: False
 
-pose_distribution: se2
+pose_distribution: simple
 latent_dimension: 20
 beta: 0.1
 gamma: 0.02

@@ -88,6 +88,9 @@ class ToyDatasetMaker(object):
             "trajectory": trajectory,
             "point_centers": self._centers,
             "point_colors": self._colors,
-            "map_size": (self._map_height, self._map_width)
+            "map_size": (self._map_height, self._map_width),
+            "resolution": self._resolution,
+            "radius": self._radius,
+            "image_size": self._image_size
         }
         np.savez(path, data)

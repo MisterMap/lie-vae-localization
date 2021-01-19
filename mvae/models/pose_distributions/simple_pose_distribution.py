@@ -42,3 +42,7 @@ class SimplePoseDistribution(PoseDistribution):
         positions[:, 2] = torch.atan2(rotations[:, 1], rotations[:, 0])
         return positions.detach().cpu().numpy()
 
+    def mean_position(self, mean, logvar):
+        return mean[:, 0:2]
+
+

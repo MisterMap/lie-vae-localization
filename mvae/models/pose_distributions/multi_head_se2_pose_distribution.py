@@ -67,3 +67,27 @@ class MultiHeadSe2PoseDistribution(Se2PoseDistribution):
         positions[:, 2] = torch.atan2(position_matrix[:, 1, 0], position_matrix[:, 0, 0])
         positions = positions.cpu().detach().numpy()
         return positions
+
+    def mean_position(self, mean, logvar):
+        batch_size = mean.shape[0]
+        mean = mean.view(batch_size * self._head_count, mean.shape[1] // self._head_count)
+        mean_matrix = self.make_matrix(mean[:, :2], mean[:, 2:])
+        log_mean = SE2.log(SE2.from_matrix(mean_matrix, normalize=False))
+        if log_mean.dim() < 2:
+            log_mean = log_mean[None]
+        logvar = logvar.view(batch_size * self._head_count, logvar.shape[1] // self._head_count)
+        inverse_sigma_matrix = self.get_inverse_sigma_matrix(logvar)
+        inverse_covariance_matrix = torch.bmm(inverse_sigma_matrix.transpose(1, 2), inverse_sigma_matrix)
+        result_inverse_covariance_matrix = torch.sum(inverse_covariance_matrix.reshape(-1, self._head_count, 3, 3), dim=1)
+        result_covariance_matrix = torch.inverse(result_inverse_covariance_matrix)
+        factors = torch.bmm(result_covariance_matrix.repeat_interleave(self._head_count, 0), inverse_covariance_matrix)
+        scaled_log_mean = torch.bmm(factors, log_mean[:, :, None])[:, :, 0]
+        result_log_mean = torch.sum(scaled_log_mean.reshape(-1, self._head_count, 3), dim=1)
+        mean_matrix = SE2.exp(result_log_mean).as_matrix()
+        if mean_matrix.dim() < 3:
+            mean_matrix = mean_matrix[None]
+        positions = torch.zeros(batch_size, 2, device=mean.device)
+        positions[:, 0] = mean_matrix[:, 0, 2]
+        positions[:, 1] = mean_matrix[:, 1, 2]
+        return positions
+

@@ -99,14 +99,15 @@ class PoseNet(pl.LightningModule):
         hidden = self.encoder(image)
         hidden = self._hidden_layer(hidden)
         position = self.decoder(hidden)
-        return position[0]
+        mean_position = self.pose_distribution.mean_position(position[0], position[1])
+        return mean_position
 
     def calculate_rmse(self, batch):
         image = batch["image"]
         position = batch["position"]
         mean_position = self.mean_position(image)
-        return torch.mean(torch.sqrt((mean_position[0] - position[0][0]) ** 2 +
-                                     (mean_position[1] - position[0][1]) ** 2))
+        return torch.sqrt(torch.mean((mean_position[:, 0] - position[0][:, 0]) ** 2 +
+                                     (mean_position[:, 1] - position[0][:, 1]) ** 2))
 
     def configure_optimizers(self):
         if "betas" in self.hparams.optimizer.keys():
